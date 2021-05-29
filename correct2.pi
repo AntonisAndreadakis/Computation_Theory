@@ -1,0 +1,17 @@
+const blA_3 = 3 real;
+const pi = 3.14 real;
+/* After we declared constants and functions *test
+ * we can now begin our start function =)
+ */
+func begin() {
+//this is also a comment...
+var io = 32 real;
+var blo_KAI_bli real;
+var lala real;
+lala = (io + 2 * blA_3);
+//blo_KAI_bli = bla(io,pi);
+//var lastOne = bla(blo_KAI_bli,45) real;
+}
+
+//func bla(bli real, blo real)  { return bli+blo; }
+

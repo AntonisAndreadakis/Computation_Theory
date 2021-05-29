@@ -1,0 +1,8 @@
+var a, b, c int;
+
+func begin() { 
+  a = readInt();
+  b = readInt();
+  c = a+b; // Here you can see some dummy comments!
+  //printf("Sum of %d and %d is %d", &a, &b, &c);
+}
