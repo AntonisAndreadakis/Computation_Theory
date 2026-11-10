@@ -1,46 +1,81 @@
-#Andreadakis Antonios 2013030059
+# Pi to C transpiler
 
-#Description:
-	This is a lexical and syntactical analysis of the imaginary language pi,
-	using flex and bison. To be more specific, I am creating a transpiler.
-	My program reads .pi files, search for Lexical and Syntactical mistakes
-	and then translate the .pi file in to .c file. We accept it if there is no
-	lexical	or syntactical error.
-	If no error occurs compile it and execute it.
+Andreadakis Antonios, 2013030059 — Computation Theory course project.
 
-#Executing files:
-	I created a Makefile in order to compile myanalyzer.y and mylexer.l
-	Simply open a terminal on the specific folder and type 'make'.
-	Then, execute command "./mycompiler < anyFilename.pi" in order to
-	have a visual result or "./mycompiler < anyFilename.pi > anyfilename.c"
-	and produce the .c file.
-	After that, compile the .c file with "gcc -o anyfilename anyfilename.c"
-	Last, execute "./anyfilename" and done!
+## Description
 
-#Comments:
-Some notices:
-	1) shift/reduce conflicts were created in order to make my program
-	able to accept .pi input files and produce files in C language.
-		-First shift/reduce on state 66.
-			This refers to 'statemet_declaration'. Specificaly on "statement ';'".
-			In order to read prime.pi line 12 -> 1 shift/reduce conflict
-		-----Removing this rule, or using // and make it as comment fixes the problem.
+A transpiler for the teaching language **Pi**, built with flex and bison.
+It reads a `.pi` program, checks it for lexical and syntax errors and, if there
+are none, translates it to C. The C file can then be compiled with gcc and run.
 
-		-Second shift/reduce on state 87.
-			This refers to 'expressions'. Specificaly on "TOKEN_NUM ';'".
-			In order to read prime.pi line 21 -> 1 shift/reduce conflict
-		-----Removing this rule, or using // and make it as comment fixes the problem.
+| File | Role |
+|---|---|
+| `mylexer.l` | flex lexer: keywords, identifiers, numbers, strings, operators, comments |
+| `myanalyzer.y` | bison grammar; each rule builds the C text for what it parsed |
+| `cgen.c`, `cgen.h` | helpers for building strings and reporting errors |
+| `pilib.h` | runtime library included by the generated C (`readInt`, `writeString`, ...) |
+| `*.pi` | sample Pi programs |
 
-		-Third shift/reduce on state 181.
-			This refers to 'function_variable_list'. Specificaly on "expression".
-			In order to read almost any .pi program I don't use the ';'
-			at the end of "expression".
-		-----Inserting the ';' fixes the problem.
-	So, for those 3 conflicts we can actually accept any .pi program as input. If we fix
-	those shift/reduce, the program will not accept any .pi program at all.
+## Requirements
 
-	2) If I chose a different way to implement the assignment, maybe
-	there wouldn't exist those conflicts and the files would be accepted normally.
-	
-	3) prime.pi from provided files, had an error in line 36 where (num<=limit).
-	For my purpose of use, I made it (limit==num).
+`flex`, `bison`, `gcc` and `make` (on Debian/Ubuntu: `sudo apt install flex bison gcc make`).
+
+## Usage
+
+Build the transpiler:
+
+```bash
+make
+```
+
+Translate a Pi program to C (the C code goes to stdout, messages to stderr):
+
+```bash
+./mycompiler < prime.pi > prime.c
+```
+
+Compile and run the result (`-I.` finds `pilib.h`, `-lm` is needed for `**`):
+
+```bash
+gcc -I. -o prime prime.c -lm
+./prime
+```
+
+Translate and compile all the samples into `build/`:
+
+```bash
+make test
+```
+
+`mycompiler` prints `Accepted!` and exits with code 0 on success. On an error it
+prints the line number and the reason, then `Rejected!`, exits with code 1 and
+produces no C code.
+
+## How the translation works
+
+- `func begin()` is the entry point. It becomes `pi_begin()`, called from a
+  generated `int main(void)`.
+- A prototype is emitted for every function, so functions may be defined in any
+  order, before or after `begin`.
+- Types: `int` -> `int`, `real` -> `double`, `bool` -> `int`, `string` -> `char*`.
+- `a ** b` becomes `pow(a, b)`; `and`, `or`, `not` become `&&`, `||`, `!`.
+- The body of every `if`, `while` and `for` is emitted inside braces.
+
+## Design notes
+
+- The grammar has **no shift/reduce or reduce/reduce conflicts**. The rule that
+  makes this possible: an expression never produces a `;`, a statement always
+  does. A `;` after a closing `}` is optional and treated as an empty statement.
+- The dangling `else` is resolved with precedence (`%prec THEN`): an `else`
+  belongs to the nearest `if`.
+- Operator precedence, lowest to highest: `or`; `and`; `== !=`; `< <= > >=`;
+  `+ -`; `* / %`; `**` (right associative); unary `not + -` and casts.
+  Assumption: `== !=` bind looser than `< <= > >=`, as in C, so that the
+  generated C text means exactly what was parsed.
+
+## Known limitations
+
+- No semantic checks (undeclared variables, type errors); those are reported by
+  gcc when the generated C is compiled.
+- Strings built by the code generator are never freed. This is fine for a
+  program that runs once and exits.

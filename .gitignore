@@ -1,0 +1,6 @@
+mycompiler
+myanalyzer.tab.c
+myanalyzer.tab.h
+myanalyzer.output
+lex.yy.c
+build/
