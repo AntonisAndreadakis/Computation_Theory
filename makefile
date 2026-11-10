@@ -1,35 +1,32 @@
-all: lexer parser compiler print_init
+CC      = gcc
+CFLAGS  = -Wall -g
+SAMPLES = $(wildcard *.pi)
 
-	
-lexer: 
-	@flex mylexer.l
+.PHONY: all test clean
 
-	
+all: mycompiler
 
-	
-parser:
-	@bison -d -v -r all myanalyzer.y
+mycompiler: myanalyzer.tab.c lex.yy.c cgen.c cgen.h
+	$(CC) $(CFLAGS) -o $@ myanalyzer.tab.c lex.yy.c cgen.c
 
-	
-	
-compiler:
-	@gcc -o mycompiler myanalyzer.tab.c lex.yy.c -lfl
+myanalyzer.tab.c: myanalyzer.y
+	bison -d -v myanalyzer.y
 
-	
+myanalyzer.tab.h: myanalyzer.tab.c
 
-	
+lex.yy.c: mylexer.l myanalyzer.tab.h
+	flex mylexer.l
+
+# Translate every sample to C and compile the result (output goes to build/)
+test: mycompiler
+	@mkdir -p build
+	@for f in $(SAMPLES); do \
+		n=$${f%.pi}; \
+		./mycompiler < $$f > build/$$n.c 2> build/$$n.log \
+			&& $(CC) -Wall -I. -o build/$$n build/$$n.c -lm \
+			&& echo "PASS $$f" || { echo "FAIL $$f"; cat build/$$n.log; exit 1; }; \
+	done
+
 clean:
-	@rm -f  myanalyzer.tab.c lex.yy.c
-	@rm -f  myanalyzer.tab.h
-	@rm -f *.output 
-	@rm -f mycompiler
-	@rm -f myanalyzer_output.c
-	
-
-	
-	
-print_init: 
-	@echo "Pi compiler created!"
-
-
-	
+	rm -f myanalyzer.tab.c myanalyzer.tab.h myanalyzer.output lex.yy.c mycompiler
+	rm -rf build

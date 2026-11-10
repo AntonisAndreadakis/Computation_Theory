@@ -33,7 +33,7 @@ func begin() {
    counter = 0;
    num = 2;
 
-   while (limit == num) { 
+   while (num <= limit) { 
       if (prime(num)) { 
          counter = counter + 1;
          writeInt(num);
